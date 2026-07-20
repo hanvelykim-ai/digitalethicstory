@@ -1,0 +1,11 @@
+{
+  "name": "digital-ethics-story-api",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@vercel/kv": "^2.0.0",
+    "bcryptjs": "^2.4.3",
+    "express": "^4.19.2",
+    "nanoid": "^3.3.7"
+  }
+}
