@@ -15,6 +15,7 @@ export default function StudentEditor() {
   const [studentName, setStudentName] = useState('');
   const [isAuthor, setIsAuthor] = useState(false);
   const [mode, setMode] = useState('board'); // 'board' | 'overview'
+  const [changingTopic, setChangingTopic] = useState(false);
   const [current, setCurrent] = useState(0);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(null);
@@ -57,6 +58,7 @@ export default function StudentEditor() {
     const next = { ...story, topic: topicId };
     setStory(next);
     save(next);
+    setChangingTopic(false);
   };
 
   const selectedTraits = story ? story.protagonist.trait.split(',').map((t) => t.trim()).filter(Boolean) : [];
@@ -100,13 +102,16 @@ export default function StudentEditor() {
     return <div className="center-screen">불러오는 중...</div>;
   }
 
-  if (!story.topic) {
+  if (!story.topic || changingTopic) {
+    const isChange = Boolean(story.topic);
     return (
       <div className="center-screen">
         <div className="card" style={{ maxWidth: 640 }}>
           <h1 style={{ fontSize: 26, marginBottom: 4 }}>어떤 주제로 이야기를 만들까요?</h1>
           <p style={{ color: 'var(--ink-soft)', marginTop: 4, marginBottom: 20, fontSize: 14 }}>
-            하나를 골라주세요. 나중에 바꿀 수 없어요!
+            {isChange
+              ? '새 주제를 골라주세요. 지금까지 쓴 글과 그림은 그대로 남아있어요.'
+              : '하나를 골라주세요. 나중에 다시 바꿀 수 있어요.'}
           </p>
           <div className="topic-grid">
             {TOPICS.map((t) => (
@@ -116,6 +121,11 @@ export default function StudentEditor() {
               </button>
             ))}
           </div>
+          {isChange && (
+            <button className="btn btn-ghost" style={{ marginTop: 16 }} onClick={() => setChangingTopic(false)}>
+              취소하고 돌아가기
+            </button>
+          )}
         </div>
       </div>
     );
@@ -130,7 +140,9 @@ export default function StudentEditor() {
     <div className="editor-page">
       <header className="editor-header">
         <div className="header-left">
-          <span className="tag">{topicLabel}</span>
+          <button className="tag" style={{ border: '1.5px solid var(--line)', cursor: 'pointer' }} onClick={() => setChangingTopic(true)}>
+            {topicLabel} · 바꾸기
+          </button>
           {isAuthor && (
             <span className="badge-author">
               <FeatherIcon size={13} /> 작가
