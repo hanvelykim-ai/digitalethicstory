@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminApi, setToken } from '../api';
+import { ApronIcon } from '../components/LineIcons';
 
 export default function AdminLogin() {
   const [password, setPassword] = useState('');
@@ -26,7 +27,10 @@ export default function AdminLogin() {
   return (
     <div className="center-screen">
       <form className="card" style={{ width: 320 }} onSubmit={submit}>
-        <h1 style={{ fontSize: 24, marginBottom: 16 }}>🍎 관리자 로그인</h1>
+        <div style={{ color: 'var(--blue)', marginBottom: 10 }}>
+          <ApronIcon size={32} />
+        </div>
+        <h1 style={{ fontSize: 22, marginBottom: 16 }}>관리자 로그인</h1>
         <div className="field">
           <label>관리자 비밀번호</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />

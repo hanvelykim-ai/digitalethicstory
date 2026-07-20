@@ -32,10 +32,19 @@ export const adminApi = {
   login: (password) => request('admin', '/admin/login', { method: 'POST', body: JSON.stringify({ password }) }),
   listStudents: () => request('admin', '/admin/students'),
   createStudent: (payload) => request('admin', '/admin/students', { method: 'POST', body: JSON.stringify(payload) }),
+  bulkCreateStudents: (students) =>
+    request('admin', '/admin/students/bulk', { method: 'POST', body: JSON.stringify({ students }) }),
   deleteStudent: (id) => request('admin', `/admin/students/${id}`, { method: 'DELETE' }),
   resetPassword: (id, password) =>
     request('admin', `/admin/students/${id}/reset-password`, { method: 'POST', body: JSON.stringify({ password }) }),
   getStudentStory: (id) => request('admin', `/admin/students/${id}/story`),
+  setPanelApproval: (id, index, approved) =>
+    request('admin', `/admin/students/${id}/story/panels/${index}/approve`, {
+      method: 'PUT',
+      body: JSON.stringify({ approved }),
+    }),
+  setComment: (id, comment) =>
+    request('admin', `/admin/students/${id}/story/comment`, { method: 'PUT', body: JSON.stringify({ comment }) }),
 };
 
 export const studentApi = {

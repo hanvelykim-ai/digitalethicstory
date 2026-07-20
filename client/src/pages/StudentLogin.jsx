@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { studentApi, setToken } from '../api';
+import { BookIcon } from '../components/LineIcons';
 
 export default function StudentLogin() {
   const [username, setUsername] = useState('');
@@ -27,7 +28,10 @@ export default function StudentLogin() {
   return (
     <div className="center-screen">
       <form className="card" style={{ width: 340 }} onSubmit={submit}>
-        <h1 style={{ fontSize: 30, marginBottom: 4 }}>📖 나만의 이야기</h1>
+        <div style={{ color: 'var(--blue)', marginBottom: 10 }}>
+          <BookIcon size={38} />
+        </div>
+        <h1 style={{ fontSize: 26, marginBottom: 4 }}>나만의 이야기</h1>
         <p style={{ color: 'var(--ink-soft)', marginTop: 0, marginBottom: 20, fontSize: 14 }}>
           선생님이 알려주신 아이디로 로그인하세요.
         </p>

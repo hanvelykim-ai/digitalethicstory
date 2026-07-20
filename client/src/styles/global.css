@@ -1,17 +1,17 @@
 :root {
-  --paper: #fbf7ee;
-  --paper-dim: #f2ecdd;
-  --ink: #2c2a4a;
-  --ink-soft: #5c5a7a;
-  --coral: #ff6b4a;
-  --coral-dim: #ffe4da;
-  --yellow: #ffc93c;
-  --sprout: #6fb98f;
-  --pink: #ff9ec4;
-  --line: #d8d0ba;
-  --radius: 14px;
-  --font-display: 'Gaegu', sans-serif;
-  --font-body: 'Nanum Gothic', 'Pretendard', -apple-system, sans-serif;
+  --paper: #ffffff;
+  --paper-dim: #f4f7fb;
+  --ink: #1f2a3c;
+  --ink-soft: #6b7688;
+  --blue: #3f6fb8;
+  --blue-dim: #eaf1fb;
+  --blue-deep: #1f2a3c;
+  --yellow: #ffcf5c;
+  --yellow-dim: #fff6e0;
+  --line: #dbe2ec;
+  --radius: 16px;
+  --font-display: 'Gowun Batang', serif;
+  --font-body: 'Noto Sans KR', -apple-system, sans-serif;
 }
 
 * {
@@ -27,16 +27,16 @@ body,
 body {
   margin: 0;
   font-family: var(--font-body);
+  font-weight: 400;
   color: var(--ink);
   background: var(--paper);
-  background-image:
-    radial-gradient(var(--line) 1px, transparent 1px);
-  background-size: 22px 22px;
 }
 
 h1, h2, h3 {
   font-family: var(--font-display);
+  font-weight: 700;
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
 button {
@@ -49,45 +49,51 @@ input, textarea, select {
 }
 
 .btn {
-  border: 2px solid var(--ink);
-  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  background: transparent;
   color: var(--ink);
   border-radius: 999px;
   padding: 10px 22px;
-  font-weight: 800;
-  font-size: 15px;
-  box-shadow: 3px 3px 0 var(--ink);
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .btn:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0 var(--ink);
+  background: var(--ink);
+  color: #fff;
 }
 
 .btn:active {
-  transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 var(--ink);
+  opacity: 0.85;
 }
 
 .btn-primary {
-  background: var(--coral);
-  border-color: var(--coral);
+  background: var(--blue);
+  border-color: var(--blue);
   color: #fff;
-  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.btn-primary:hover {
+  background: var(--blue-deep);
+  border-color: var(--blue-deep);
 }
 
 .btn-ghost {
-  box-shadow: none;
   border-color: var(--line);
   color: var(--ink-soft);
 }
 
+.btn-ghost:hover {
+  background: var(--paper-dim);
+  color: var(--ink);
+}
+
 .btn:disabled {
-  opacity: 0.45;
+  opacity: 0.35;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: 3px 3px 0 var(--ink);
+  background: transparent;
+  color: var(--ink);
 }
 
 .field {
@@ -98,15 +104,16 @@ input, textarea, select {
 }
 
 .field label {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 12.5px;
+  font-weight: 500;
   color: var(--ink-soft);
+  letter-spacing: 0.01em;
 }
 
 .field input,
 .field textarea,
 .field select {
-  border: 2px solid var(--ink);
+  border: 1.5px solid var(--line);
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 15px;
@@ -114,17 +121,23 @@ input, textarea, select {
   color: var(--ink);
 }
 
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
 .field textarea {
   resize: vertical;
   min-height: 90px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .card {
   background: #fff;
-  border: 2px solid var(--ink);
+  border: 1.5px solid var(--line);
   border-radius: var(--radius);
-  box-shadow: 4px 4px 0 var(--ink);
   padding: 24px;
 }
 
@@ -134,12 +147,15 @@ input, textarea, select {
   align-items: center;
   justify-content: center;
   padding: 24px;
+  background:
+    radial-gradient(circle at 10% 15%, var(--blue-dim) 0%, transparent 45%),
+    radial-gradient(circle at 90% 85%, var(--yellow-dim) 0%, transparent 45%);
 }
 
 .error-text {
-  color: var(--coral);
+  color: #c0472e;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .tag {
@@ -148,8 +164,13 @@ input, textarea, select {
   gap: 6px;
   padding: 4px 12px;
   border-radius: 999px;
-  border: 2px solid var(--ink);
+  border: 1.5px solid var(--line);
   font-size: 12px;
-  font-weight: 800;
-  background: var(--yellow);
+  font-weight: 500;
+  background: var(--blue-dim);
+  color: var(--ink);
+}
+
+.line-icon {
+  display: block;
 }

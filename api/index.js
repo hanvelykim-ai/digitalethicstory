@@ -52,12 +52,35 @@ function requireStudent(handler) {
 }
 
 function emptyPanels() {
-  return Array.from({ length: STAGE_COUNT }, () => ({ text: '', drawing: null }));
+  return Array.from({ length: STAGE_COUNT }, () => ({ text: '', drawing: null, approved: false }));
+}
+
+function normalizeStory(story) {
+  if (!story) {
+    return { topic: null, protagonist: { name: '', trait: '' }, panels: emptyPanels(), comment: '', updatedAt: null };
+  }
+  const panels = (story.panels && story.panels.length === STAGE_COUNT ? story.panels : emptyPanels()).map((p) => ({
+    text: p.text || '',
+    drawing: p.drawing || null,
+    approved: Boolean(p.approved),
+  }));
+  return {
+    topic: story.topic || null,
+    protagonist: story.protagonist || { name: '', trait: '' },
+    panels,
+    comment: story.comment || '',
+    updatedAt: story.updatedAt || null,
+  };
 }
 
 function progressOf(story) {
   if (!story || !story.panels) return 0;
   return story.panels.filter((p) => (p.text && p.text.trim()) || p.drawing).length;
+}
+
+function isAuthor(story) {
+  if (!story || !story.panels || story.panels.length !== STAGE_COUNT) return false;
+  return story.panels.every((p) => p.approved);
 }
 
 // ---------- admin auth ----------
@@ -79,7 +102,7 @@ app.get('/api/admin/students', requireAdmin(async (req, res) => {
     ids.map(async (id) => {
       const student = await kv.get(`student:${id}`);
       if (!student) return null;
-      const story = await kv.get(`story:${id}`);
+      const story = normalizeStory(await kv.get(`story:${id}`));
       return {
         id: student.id,
         username: student.username,
@@ -88,8 +111,9 @@ app.get('/api/admin/students', requireAdmin(async (req, res) => {
         createdAt: student.createdAt,
         progress: progressOf(story),
         total: STAGE_COUNT,
-        topic: story ? story.topic : null,
-        updatedAt: story ? story.updatedAt : null,
+        topic: story.topic,
+        updatedAt: story.updatedAt,
+        author: isAuthor(story),
       };
     })
   );
@@ -114,6 +138,51 @@ app.post('/api/admin/students', requireAdmin(async (req, res) => {
   ids.push(id);
   await kv.set('students:list', ids);
   res.json({ id, username, name, group: group || '' });
+}));
+
+// admin: bulk create from an uploaded spreadsheet (parsed client-side, sent as rows)
+app.post('/api/admin/students/bulk', requireAdmin(async (req, res) => {
+  const { students } = req.body || {};
+  if (!Array.isArray(students) || students.length === 0) {
+    return res.status(400).json({ error: '추가할 학생 목록이 없어요.' });
+  }
+  const ids = (await kv.get('students:list')) || [];
+  const seenUsernames = new Set();
+  const created = [];
+  const skipped = [];
+
+  for (const row of students) {
+    const name = (row.name || '').trim();
+    const group = (row.group || '').trim();
+    const username = (row.username || '').trim();
+    const password = (row.password || '').trim();
+
+    if (!name || !username || !password) {
+      skipped.push({ name: name || '(이름 없음)', reason: '이름/아이디/비밀번호 누락' });
+      continue;
+    }
+    if (seenUsernames.has(username)) {
+      skipped.push({ name, reason: `아이디 "${username}" 중복 (목록 내)` });
+      continue;
+    }
+    const existingId = await kv.get(`username:${username}`);
+    if (existingId) {
+      skipped.push({ name, reason: `아이디 "${username}" 이미 사용 중` });
+      continue;
+    }
+
+    const id = genId();
+    const passwordHash = await bcrypt.hash(password, 10);
+    const student = { id, username, passwordHash, name, group, createdAt: Date.now() };
+    await kv.set(`student:${id}`, student);
+    await kv.set(`username:${username}`, id);
+    ids.push(id);
+    seenUsernames.add(username);
+    created.push({ id, username, name, group, password });
+  }
+
+  await kv.set('students:list', ids);
+  res.json({ created, skipped });
 }));
 
 app.delete('/api/admin/students/:id', requireAdmin(async (req, res) => {
@@ -144,13 +213,40 @@ app.get('/api/admin/students/:id/story', requireAdmin(async (req, res) => {
   const { id } = req.params;
   const student = await kv.get(`student:${id}`);
   if (!student) return res.status(404).json({ error: '학생을 찾을 수 없어요.' });
-  const story = (await kv.get(`story:${id}`)) || {
-    topic: null,
-    protagonist: { name: '', trait: '' },
-    panels: emptyPanels(),
-    updatedAt: null,
-  };
-  res.json({ student: { id: student.id, name: student.name, group: student.group, username: student.username }, story });
+  const story = normalizeStory(await kv.get(`story:${id}`));
+  res.json({
+    student: { id: student.id, name: student.name, group: student.group, username: student.username },
+    story,
+    author: isAuthor(story),
+  });
+}));
+
+// admin: approve / unapprove a single panel (scene pass)
+app.put('/api/admin/students/:id/story/panels/:index/approve', requireAdmin(async (req, res) => {
+  const { id, index } = req.params;
+  const idx = Number(index);
+  const { approved } = req.body || {};
+  const student = await kv.get(`student:${id}`);
+  if (!student) return res.status(404).json({ error: '학생을 찾을 수 없어요.' });
+  if (!Number.isInteger(idx) || idx < 0 || idx >= STAGE_COUNT) {
+    return res.status(400).json({ error: '잘못된 장면 번호예요.' });
+  }
+  const story = normalizeStory(await kv.get(`story:${id}`));
+  story.panels[idx].approved = Boolean(approved);
+  await kv.set(`story:${id}`, story);
+  res.json({ ok: true, panels: story.panels, author: isAuthor(story) });
+}));
+
+// admin: leave/update overall comment
+app.put('/api/admin/students/:id/story/comment', requireAdmin(async (req, res) => {
+  const { id } = req.params;
+  const { comment } = req.body || {};
+  const student = await kv.get(`student:${id}`);
+  if (!student) return res.status(404).json({ error: '학생을 찾을 수 없어요.' });
+  const story = normalizeStory(await kv.get(`story:${id}`));
+  story.comment = comment || '';
+  await kv.set(`story:${id}`, story);
+  res.json({ ok: true, comment: story.comment });
 }));
 
 // ---------- student auth ----------
@@ -173,26 +269,29 @@ app.post('/api/student/login', async (req, res) => {
 // ---------- student: story CRUD ----------
 
 app.get('/api/student/story', requireStudent(async (req, res, auth) => {
-  const story = (await kv.get(`story:${auth.id}`)) || {
-    topic: null,
-    protagonist: { name: '', trait: '' },
-    panels: emptyPanels(),
-    updatedAt: null,
-  };
-  res.json({ story });
+  const student = await kv.get(`student:${auth.id}`);
+  const story = normalizeStory(await kv.get(`story:${auth.id}`));
+  res.json({ story, studentName: student ? student.name : '', author: isAuthor(story) });
 }));
 
 app.put('/api/student/story', requireStudent(async (req, res, auth) => {
   const { topic, protagonist, panels } = req.body || {};
-  const existing = (await kv.get(`story:${auth.id}`)) || {
-    topic: null,
-    protagonist: { name: '', trait: '' },
-    panels: emptyPanels(),
-  };
+  const existing = normalizeStory(await kv.get(`story:${auth.id}`));
+  // students can edit text/drawing but never their own approval status —
+  // approval is preserved from the existing record regardless of what the client sends.
+  const nextPanels = existing.panels.map((p, i) => {
+    const incoming = panels && panels[i] ? panels[i] : {};
+    return {
+      text: incoming.text !== undefined ? incoming.text : p.text,
+      drawing: incoming.drawing !== undefined ? incoming.drawing : p.drawing,
+      approved: p.approved, // server-owned
+    };
+  });
   const next = {
     topic: topic !== undefined ? topic : existing.topic,
     protagonist: protagonist !== undefined ? protagonist : existing.protagonist,
-    panels: panels !== undefined ? panels : existing.panels,
+    panels: nextPanels,
+    comment: existing.comment,
     updatedAt: Date.now(),
   };
   await kv.set(`story:${auth.id}`, next);
